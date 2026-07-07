@@ -2,7 +2,7 @@ import axios from "axios";
 
 // Change this if your backend runs on a different host/port
 const client = axios.create({
-  baseURL: "http://localhost:8080/api",
+  baseURL: "https://crud-backend-tpdh.onrender.com/api",
   headers: {
     "Content-Type": "application/json",
   },
