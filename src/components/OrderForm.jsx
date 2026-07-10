@@ -1,15 +1,12 @@
 import { useEffect, useState } from "react";
+import axios from "axios";
 
 const STATUS_OPTIONS = ["PENDING", "IN_PRODUCTION", "DISPATCHED", "DELIVERED", "CANCELLED"];
 
 const emptyOrder = {
-  customer_name: "",
-  customer_email: "",
-  product_name: "",
-  product_code: "",
+  customer_id:"",
+  product_id:"",
   quantity: "",
-  unit: "",
-  unit_price: "",
   total_amount: "",
   delivery_address: "",
   expected_delivery: "",
@@ -28,6 +25,25 @@ const emptyOrder = {
  */
 export default function OrderForm({ initialValues, onSubmit, submitLabel = "Save", submitting = false }) {
   const [values, setValues] = useState(emptyOrder);
+  const [customers,setCustomers]=useState([]);
+  const [products,setProducts]=useState([]);
+  const [selectedProduct,setSelectedProduct]=useState(null);
+
+  useEffect(()=>{
+  
+  axios.get("http://localhost:8080/customers")
+  .then(res=>{
+  setCustomers(res.data);
+  });
+  
+  
+  axios.get("http://localhost:8080/products")
+  .then(res=>{
+  setProducts(res.data);
+  });
+  
+  
+  },[]);
 
   // Re-sync form fields whenever initialValues changes (e.g. after a lookup or on edit-page load)
   useEffect(() => {
@@ -36,9 +52,51 @@ export default function OrderForm({ initialValues, onSubmit, submitLabel = "Save
     }
   }, [initialValues]);
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setValues((prev) => ({ ...prev, [name]: value }));
+  const handleChange=(e)=>{
+  
+  const {name,value}=e.target;
+  
+  setValues(prev=>{
+  
+  let updated={
+  ...prev,
+  [name]:value
+  };
+  
+  if(name==="quantity" && selectedProduct){
+  
+  updated.total_amount =
+  selectedProduct.unitPrice * value;
+  
+  }
+  return updated;
+  }); 
+  };
+
+  const handleProductChange=(e)=>{
+
+  const id=e.target.value;
+  
+  
+  const product=products.find(
+  p=>p.id===Number(id)
+  );
+  
+  
+  setSelectedProduct(product);
+  
+  
+  setValues(prev=>({
+  ...prev,
+  product_id:id,
+  total_amount:
+  product && prev.quantity
+  ?
+  product.unitPrice * prev.quantity
+  :
+  ""
+  }));
+  
   };
 
   const handleSubmit = (e) => {
@@ -62,7 +120,7 @@ export default function OrderForm({ initialValues, onSubmit, submitLabel = "Save
           />
         </div> */}
 
-        <div className="form-field">
+        {/* <div className="form-field">
           <label htmlFor="customer_name">Customer Name</label>
           <input
             id="customer_name"
@@ -83,9 +141,37 @@ export default function OrderForm({ initialValues, onSubmit, submitLabel = "Save
             onChange={handleChange}
             required
           />
-        </div>
+        </div> */}
 
         <div className="form-field">
+        
+        <label>Customer</label>
+        
+        <select
+        name="customer_id"
+        value={values.customer_id}
+        onChange={handleChange}
+        required
+        >
+        
+        <option value="">
+        Select Customer
+        </option>
+        
+        
+        {customers.map(c=>(
+        
+        <option key={c.id} value={c.id}>
+        {c.customerName}
+        </option>
+        
+        ))}
+        
+        </select>
+        
+        </div>
+
+        {/* <div className="form-field">
           <label htmlFor="product_name">Product Name</label>
           <input
             id="product_name"
@@ -106,6 +192,34 @@ export default function OrderForm({ initialValues, onSubmit, submitLabel = "Save
             onChange={handleChange}
             required
           />
+        </div> */}
+
+        <div className="form-field">
+
+        <label>Product</label>
+        
+        <select
+        name="product_id"
+        value={values.product_id}
+        onChange={handleProductChange}
+        required
+        >
+        
+        <option value="">
+        Select Product
+        </option>
+        
+        
+        {products.map(p=>(
+        
+        <option key={p.id} value={p.id}>
+        {p.productName}
+        </option>
+        
+        ))}
+        
+        </select>
+        
         </div>
 
         <div className="form-field">
@@ -121,7 +235,7 @@ export default function OrderForm({ initialValues, onSubmit, submitLabel = "Save
           />
         </div>
 
-        <div className="form-field">
+        {/* <div className="form-field">
           <label htmlFor="unit">Unit</label>
           <select id="unit" name="unit" value={values.unit} onChange={handleChange} required>
             <option value="">Select unit</option>
@@ -145,6 +259,19 @@ export default function OrderForm({ initialValues, onSubmit, submitLabel = "Save
             onChange={handleChange}
             required
           />
+        </div> */}
+
+        <div className="form-field">
+
+        <label>Unit Price</label>
+        
+        <input
+        value={
+        selectedProduct?.unitPrice || ""
+        }
+        readOnly
+        />
+        
         </div>
 
         <div className="form-field">
@@ -155,9 +282,12 @@ export default function OrderForm({ initialValues, onSubmit, submitLabel = "Save
             type="number"
             min="0"
             step="0.01"
-            value={values.total_amount}
+            {/* value={values.total_amount}
             onChange={handleChange}
-            required
+            required */}
+          name="total_amount"
+          value={values.total_amount}
+          readOnly
           />
         </div>
 
