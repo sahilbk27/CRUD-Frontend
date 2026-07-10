@@ -116,15 +116,15 @@ export default function ViewOrders() {
                     <span className="id-chip">{o.order_number}</span>
                   </td>
                   <td>
-                    <div>{o.customer_name}</div>
-                    <div className="customer-email">{o.customer_email}</div>
+                    <div>{o.customer?.customerName}</div>
+                    <div className="customer-email">{o.customer?.customerEmail}</div>
                   </td>
                   <td>
-                    <div>{o.product_name}</div>
-                    <div className="customer-email">{o.product_code}</div>
+                    <div>{o.product?.productName}</div>
+                    <div className="customer-email">{o.product?.productCode}</div>
                   </td>
-                  <td style={{ whiteSpace: "nowrap" }}>{o.quantity} {o.unit}</td>
-                  <td style={{ whiteSpace: "nowrap" }}>₹{o.unit_price?.toLocaleString("en-IN")}</td>
+                  <td style={{ whiteSpace: "nowrap" }}>{o.quantity} {o.product?.unit}</td>
+                  <td style={{ whiteSpace: "nowrap" }}>₹{o.o.product?.unitPrice?.toLocaleString("en-IN")}</td>
                   <td style={{ whiteSpace: "nowrap" }}>₹{o.total_amount?.toLocaleString("en-IN")}</td>
                   <td>
                     <span className={`status-pill status-${(o.status || "").toLowerCase().replace("_", "-")}`}>
