@@ -282,9 +282,6 @@ export default function OrderForm({ initialValues, onSubmit, submitLabel = "Save
             type="number"
             min="0"
             step="0.01"
-            {/* value={values.total_amount}
-            onChange={handleChange}
-            required */}
           name="total_amount"
           value={values.total_amount}
           readOnly
