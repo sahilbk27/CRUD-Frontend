@@ -282,9 +282,8 @@ export default function OrderForm({ initialValues, onSubmit, submitLabel = "Save
             type="number"
             min="0"
             step="0.01"
-          name="total_amount"
-          value={values.total_amount}
-          readOnly
+            value={values.total_amount}
+            readOnly
           />
         </div>
 
