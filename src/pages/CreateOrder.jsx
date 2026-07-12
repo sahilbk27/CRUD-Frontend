@@ -7,7 +7,7 @@ export default function CreateOrder() {
   const navigate = useNavigate();
 
   const [lookupId, setLookupId] = useState("");
-  const [lookupStatus, setLookupStatus] = useState(null); // { type: 'success' | 'error', message }
+  const [lookupStatus, setLookupStatus] = useState(null);
   const [looking, setLooking] = useState(false);
 
   const [formValues, setFormValues] = useState(emptyOrder);
@@ -20,12 +20,23 @@ export default function CreateOrder() {
     setLookupStatus(null);
     try {
       const res = await getOrderById(lookupId);
-      // Strip the id so submitting creates a *new* order instead of overwriting the source
-      const { id, ...rest } = res.data;
-      setFormValues(rest);
-      setLookupStatus({ type: "success", message: `Loaded order #${lookupId}. Edit and save as a new order.` });
-    } catch (err) {
-      setLookupStatus({ type: "error", message: `No order found with ID ${lookupId}` });
+      // Strip id and order_number — new order gets its own generated number
+      // Extract customer/product objects and map to flat IDs for the dropdowns
+      const { id, order_number, customer, product, ...rest } = res.data;
+      setFormValues({
+        ...rest,
+        customerId: customer?.id || "",
+        productId:  product?.id  || "",
+      });
+      setLookupStatus({
+        type: "success",
+        message: `Loaded order #${lookupId}. Edit and save as a new order.`,
+      });
+    } catch {
+      setLookupStatus({
+        type: "error",
+        message: `No order found with ID ${lookupId}`,
+      });
     } finally {
       setLooking(false);
     }
@@ -38,7 +49,7 @@ export default function CreateOrder() {
       const res = await createOrder(values);
       navigate("/orders/view", { state: { created: res.data.id } });
     } catch (err) {
-      setError(err.response?.data || "Failed to create order");
+      setError(err.response?.data?.message || err.response?.data || "Failed to create order");
     } finally {
       setSubmitting(false);
     }
@@ -47,26 +58,33 @@ export default function CreateOrder() {
   return (
     <div className="page">
       <div className="page-header">
-        {/* <div className="eyebrow">Sales Orders / Create</div> */}
         <h1>Create Order</h1>
-        <p>Fill out a new order, or load an existing order by Order Number to duplicate</p>
+        <p>Fill out a new order, or load an existing order by ID to duplicate it.</p>
       </div>
 
       <div className="lookup-box">
         <div className="form-field">
-          <label htmlFor="lookupId">Duplicate from Order Number</label>
+          <label htmlFor="lookupId">Duplicate from Order ID</label>
           <input
             id="lookupId"
             value={lookupId}
             onChange={(e) => setLookupId(e.target.value)}
-            placeholder="Enter Order Number"
+            placeholder="Enter Order ID"
+            type="number"
           />
         </div>
-        <button type="button" className="btn btn-secondary" onClick={handleLookup} disabled={looking}>
+        <button
+          type="button"
+          className="btn btn-secondary"
+          onClick={handleLookup}
+          disabled={looking}
+        >
           {looking ? "Looking up..." : "Load"}
         </button>
         {lookupStatus && (
-          <span className={`lookup-status ${lookupStatus.type}`}>{lookupStatus.message}</span>
+          <span className={`lookup-status ${lookupStatus.type}`}>
+            {lookupStatus.message}
+          </span>
         )}
       </div>
 

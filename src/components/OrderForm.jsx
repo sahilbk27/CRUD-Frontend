@@ -1,15 +1,14 @@
 import { useEffect, useState } from "react";
+import { getCustomers } from "../api/customers";
+import { getProducts } from "../api/products";
 
 const STATUS_OPTIONS = ["PENDING", "IN_PRODUCTION", "DISPATCHED", "DELIVERED", "CANCELLED"];
 
+// emptyOrder uses customerId and productId — flat text fields removed
 const emptyOrder = {
-  customer_name: "",
-  customer_email: "",
-  product_name: "",
-  product_code: "",
+  customerId: "",
+  productId: "",
   quantity: "",
-  unit: "",
-  unit_price: "",
   total_amount: "",
   delivery_address: "",
   expected_delivery: "",
@@ -17,24 +16,28 @@ const emptyOrder = {
   order_date: "",
 };
 
-/**
- * Controlled form for creating/editing a Sales order.
- *
- * Props:
- * - initialValues: object to prefill the form (used for edit + duplicate)
- * - onSubmit(values): called with form values on submit
- * - submitLabel: text for the submit button
- * - submitting: disables the button + shows a loading label
- */
 export default function OrderForm({ initialValues, onSubmit, submitLabel = "Save", submitting = false }) {
   const [values, setValues] = useState(emptyOrder);
+  const [customers, setCustomers] = useState([]);
+  const [products, setProducts] = useState([]);
 
-  // Re-sync form fields whenever initialValues changes (e.g. after a lookup or on edit-page load)
+  // Load customers and products in parallel on mount
   useEffect(() => {
-    if (initialValues) {
+    Promise.all([getCustomers(), getProducts()])
+      .then(([customersRes, productsRes]) => {
+        setCustomers(customersRes.data);
+        setProducts(productsRes.data);
+      })
+      .catch(err => console.error("Could not load master data", err));
+  }, []);
+
+  // Re-sync form only after both master lists AND initialValues are ready
+  // This ensures dropdowns have options before trying to set selected value
+  useEffect(() => {
+    if (initialValues && customers.length > 0 && products.length > 0) {
       setValues({ ...emptyOrder, ...initialValues });
     }
-  }, [initialValues]);
+  }, [initialValues, customers, products]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -43,69 +46,55 @@ export default function OrderForm({ initialValues, onSubmit, submitLabel = "Save
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    onSubmit(values);
+
+    // Convert flat customerId/productId to nested objects backend expects
+    const payload = {
+      ...values,
+      customer: { id: Number(values.customerId) },
+      product:  { id: Number(values.productId) },
+    };
+
+    // Remove flat id fields — backend doesn't need them
+    delete payload.customerId;
+    delete payload.productId;
+
+    onSubmit(payload);
   };
 
   return (
     <form onSubmit={handleSubmit}>
       <div className="form-grid">
 
-        {/* <div className="form-field">
-          <label htmlFor="order_number">Order Number</label>
-          <input
-            id="order_number"
-            name="order_number"
-            placeholder="e.g. ORD-2026-001"
-            value={values.order_number}
-            onChange={handleChange}
-            required
-          />
-        </div> */}
-
         <div className="form-field">
-          <label htmlFor="customer_name">Customer Name</label>
-          <input
-            id="customer_name"
-            name="customer_name"
-            value={values.customer_name}
+          <label>Customer</label>
+          <select
+            name="customerId"
+            value={values.customerId}
             onChange={handleChange}
             required
-          />
+          >
+            <option value="">Select customer</option>
+            {customers.map(c => (
+              <option key={c.id} value={c.id}>{c.customer_name}</option>
+            ))}
+          </select>
         </div>
 
         <div className="form-field">
-          <label htmlFor="customer_email">Customer Email</label>
-          <input
-            id="customer_email"
-            name="customer_email"
-            type="email"
-            value={values.customer_email}
+          <label>Product</label>
+          <select
+            name="productId"
+            value={values.productId}
             onChange={handleChange}
             required
-          />
-        </div>
-
-        <div className="form-field">
-          <label htmlFor="product_name">Product Name</label>
-          <input
-            id="product_name"
-            name="product_name"
-            value={values.product_name}
-            onChange={handleChange}
-            required
-          />
-        </div>
-
-        <div className="form-field">
-          <label htmlFor="product_code">Product Code</label>
-          <input
-            id="product_code"
-            name="product_code"
-            placeholder="e.g. FIP-112"
-            value={values.product_code}
-            onChange={handleChange}
-            required
-          />
+          >
+            <option value="">Select product</option>
+            {products.map(p => (
+              <option key={p.id} value={p.id}>
+                {p.product_name} — {p.product_code}
+              </option>
+            ))}
+          </select>
         </div>
 
         <div className="form-field">
@@ -116,32 +105,6 @@ export default function OrderForm({ initialValues, onSubmit, submitLabel = "Save
             type="number"
             min="1"
             value={values.quantity}
-            onChange={handleChange}
-            required
-          />
-        </div>
-
-        <div className="form-field">
-          <label htmlFor="unit">Unit</label>
-          <select id="unit" name="unit" value={values.unit} onChange={handleChange} required>
-            <option value="">Select unit</option>
-            <option value="PCS">PCS</option>
-            <option value="SET">SET</option>
-            <option value="MT">MT</option>
-            <option value="KG">KG</option>
-            <option value="L">L</option>
-          </select>
-        </div>
-
-        <div className="form-field">
-          <label htmlFor="unit_price">Unit Price (₹)</label>
-          <input
-            id="unit_price"
-            name="unit_price"
-            type="number"
-            min="0"
-            step="0.01"
-            value={values.unit_price}
             onChange={handleChange}
             required
           />
@@ -185,6 +148,15 @@ export default function OrderForm({ initialValues, onSubmit, submitLabel = "Save
           />
         </div>
 
+        <div className="form-field">
+          <label htmlFor="status">Status</label>
+          <select id="status" name="status" value={values.status} onChange={handleChange}>
+            {STATUS_OPTIONS.map((s) => (
+              <option key={s} value={s}>{s}</option>
+            ))}
+          </select>
+        </div>
+
         <div className="form-field full">
           <label htmlFor="delivery_address">Delivery Address</label>
           <input
@@ -195,14 +167,6 @@ export default function OrderForm({ initialValues, onSubmit, submitLabel = "Save
             onChange={handleChange}
             required
           />
-        </div>
-        <div className="form-field">
-          <label htmlFor="status">Status</label>
-          <select id="status" name="status" value={values.status} onChange={handleChange}>
-            {STATUS_OPTIONS.map((s) => (
-              <option key={s} value={s}>{s}</option>
-            ))}
-          </select>
         </div>
 
       </div>

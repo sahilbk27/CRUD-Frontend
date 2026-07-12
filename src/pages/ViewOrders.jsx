@@ -66,7 +66,6 @@ export default function ViewOrders() {
   return (
     <div className="page">
       <div className="page-header">
-        {/* <div className="eyebrow">Sales Orders / Manage</div> */}
         <h1>View Orders</h1>
         <p>Search, edit, or delete existing sales orders.</p>
       </div>
@@ -75,7 +74,7 @@ export default function ViewOrders() {
         <input
           value={keyword}
           onChange={(e) => setKeyword(e.target.value)}
-          placeholder="Search by customer, product..."
+          placeholder="Search by customer, product, order number..."
         />
         <button type="submit" className="btn btn-primary">Search</button>
         {keyword && (
@@ -116,18 +115,24 @@ export default function ViewOrders() {
                     <span className="id-chip">{o.order_number}</span>
                   </td>
                   <td>
-                    <div>{o.customer_name}</div>
-                    <div className="customer-email">{o.customer_email}</div>
+                    <div>{o.customer?.customer_name}</div>
+                    <div className="customer-email">{o.customer?.customer_email}</div>
                   </td>
                   <td>
-                    <div>{o.product_name}</div>
-                    <div className="customer-email">{o.product_code}</div>
+                    <div>{o.product?.product_name}</div>
+                    <div className="customer-email">{o.product?.product_code}</div>
                   </td>
-                  <td style={{ whiteSpace: "nowrap" }}>{o.quantity} {o.unit}</td>
-                  <td style={{ whiteSpace: "nowrap" }}>₹{o.unit_price?.toLocaleString("en-IN")}</td>
-                  <td style={{ whiteSpace: "nowrap" }}>₹{o.total_amount?.toLocaleString("en-IN")}</td>
+                  <td style={{ whiteSpace: "nowrap" }}>
+                    {o.quantity} {o.product?.unit}
+                  </td>
+                  <td style={{ whiteSpace: "nowrap" }}>
+                    ₹{o.product?.unit_price?.toLocaleString("en-IN")}
+                  </td>
+                  <td style={{ whiteSpace: "nowrap" }}>
+                    ₹{o.total_amount?.toLocaleString("en-IN")}
+                  </td>
                   <td>
-                    <span className={`status-pill status-${(o.status || "").toLowerCase().replace("_", "-")}`}>
+                    <span className={`status-pill status-${(o.status || "").toLowerCase().replace(/_/g, "-")}`}>
                       <span className="status-dot" />
                       {o.status}
                     </span>

@@ -13,9 +13,18 @@ export default function EditOrder() {
   const [error, setError] = useState("");
 
   useEffect(() => {
+    // Only fetch the order here — customers and products are fetched
+    // inside OrderForm itself using Promise.all, so no duplication
     getOrderById(id)
-      .then((res) => setInitialValues(res.data))
-      .catch(() => setError("Order not found"))
+      .then((res) => {
+        const { customer, product, ...rest } = res.data;
+        setInitialValues({
+          ...rest,
+          customerId: customer?.id || "",
+          productId:  product?.id  || "",
+        });
+      })
+      .catch(() => setError("Could not load order data"))
       .finally(() => setLoading(false));
   }, [id]);
 
@@ -25,8 +34,8 @@ export default function EditOrder() {
     try {
       await updateOrder(id, values);
       navigate("/orders/view", { state: { updated: id } });
-    } catch {
-      setError("Failed to update order");
+    } catch (err) {
+      setError(err.response?.data?.message || "Failed to update order");
     } finally {
       setSubmitting(false);
     }
